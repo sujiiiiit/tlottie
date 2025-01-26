@@ -6,8 +6,8 @@
 
 import type {LiteModeKey} from '../helpers/liteMode';
 import type RLottiePlayer from '../lib/rlottie/rlottiePlayer';
-import rootScope from '../lib/rootScope';
-import {MOUNT_CLASS_TO} from '../config/debug';
+// import rootScope from '../lib/rootScope';
+// import {MOUNT_CLASS_TO} from '../config/debug';
 import isInDOM from '../helpers/dom/isInDOM';
 import indexOfAndSplice from '../helpers/array/indexOfAndSplice';
 import forEachReverse from '../helpers/array/forEachReverse';
@@ -69,7 +69,11 @@ export class AnimationIntersector {
             continue;
           }
 
-          const animation = this.byGroups[group as AnimationItemGroup].find((p) => p.el === target);
+          const groupAnimations = this.byGroups[group as AnimationItemGroup];
+          if (!groupAnimations) {
+            continue;
+          }
+          const animation = groupAnimations.find((p) => p.el === target);
           if(!animation) {
             continue;
           }
@@ -138,7 +142,11 @@ export class AnimationIntersector {
   public getAnimations(element: HTMLElement) {
     const found: AnimationItem[] = [];
     for(const group in this.byGroups) {
-      for(const player of this.byGroups[group as AnimationItemGroup]) {
+      const groupAnimations = this.byGroups[group as AnimationItemGroup];
+      if (!groupAnimations) {
+        continue;
+      }
+      for(const player of groupAnimations) {
         if(player.el === element) {
           found.push(player);
         }
@@ -205,9 +213,10 @@ export class AnimationIntersector {
     }
 
     if(item.type === 'lottie') {
-      if(!rootScope.settings.stickers.loop && animation.loop) {
-        animation.loop = rootScope.settings.stickers.loop;
-      }
+      // if(!rootScope.settings.stickers.loop && animation.loop) {
+      //   animation.loop = rootScope.settings.stickers.loop;
+      // }
+      animation.loop = true;
     }
 
     (this.byGroups[group as AnimationItemGroup] ??= []).push(item);
@@ -237,9 +246,11 @@ export class AnimationIntersector {
 
       const animations = this.byGroups[group];
 
-      forEachReverse(animations, (animation) => {
-        this.checkAnimation(animation, blurred, destroy);
-      });
+      if (animations) {
+        forEachReverse(animations, (animation) => {
+          this.checkAnimation(animation, blurred, destroy);
+        });
+      }
     }
   }
 
@@ -336,8 +347,8 @@ export class AnimationIntersector {
     this.byPlayer.forEach((animationItem, animation) => {
       if(animationItem.liteModeKey === liteModeKey) {
         changed = true;
-        animation.autoplay = play ? animation._autoplay : false;
-        animation.loop = play ? rootScope.settings.stickers.loop && animation._loop : false;
+        animation.autoplay = play ? (animation._autoplay ?? false) : false;
+        animation.loop = play ? (animation._loop ?? false) : false;
       }
     });
 
@@ -356,7 +367,7 @@ export class AnimationIntersector {
         animation.loop = loop;
 
         // if(animation._autoplay && animation.autoplay !== animation._autoplay) {
-        animation.autoplay = animation._autoplay;
+        animation.autoplay = animation._autoplay ?? false;
         // }
       }
     });
@@ -375,5 +386,5 @@ export class AnimationIntersector {
 }
 
 const animationIntersector = new AnimationIntersector();
-MOUNT_CLASS_TO && (MOUNT_CLASS_TO.animationIntersector = animationIntersector);
+// MOUNT_CLASS_TO && (MOUNT_CLASS_TO.animationIntersector = animationIntersector);
 export default animationIntersector;
